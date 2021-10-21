@@ -112,9 +112,27 @@ base_facet = function(
   datals = raw_data |>
     group_by_at(facets) |>
     group_split()
+  layer_datals = map(px$layers, ~{
+    if(is.data.frame(.x$data)) {
+      if (all(facets %in% colnames(.x$data))) {
+        .x$data |>
+          group_by_at(facets) |>
+          group_split()
+      } else {
+        return(NA)
+      }
+    } else {
+      return(NA)
+    }
+  })
   plot_list = map(1:length(datals), ~ {
-    psub = p
+    psub = unserialize(serialize(px,NULL))
     psub$data = datals[[.x]]
+    for (i in 1:length(psub$layers)) {
+      if (any(!is.na(layer_datals[[i]]))) {
+        psub$layers[[i]]$data = layer_datals[[i]][[.x]]
+      }
+    }
     for (c in 1:length(facets)) {
       var.name = facets[c] |> smart_lab()
       var.value = datakey[[.x, c]]
@@ -128,11 +146,11 @@ base_facet = function(
         facet.name = str_c(facet_name, "\n", name)
       }
     }
-    psub = base_mode({
+    pfacet = base_mode({
       psub +
         labs(subtitle = facet.name)
     })
-    return(psub)
+    return(pfacet)
   })
   wrap_plots(plot_list, guides = guides, ...)
 }
@@ -171,14 +189,14 @@ if (FALSE) {
   library(tidyverse)
   library(dplyr)
   library(ggplot2)
+  library(patchwork)
+  library(glue)
   oh_my_ggplot()
 
-  base_mode({
-    ggplot(mtcars) +
-      geom_line(aes(mpg, wt, color = as.factor(carb))) +
-      labs(title="hello") +
-      theme_bw() +
-      facet_wrap(~am) +
-      better_color_legend()
-  })
+  annot_tb = tibble(x = c(18,24), y = c(4.5,3.0), am = c(0,1), lab = c("Hi", "There"))
+ p = ggplot(mtcars) |>
+    geom_line(aes(mpg, wt, color = as.factor(carb))) |>
+    labs(title="hello") |>
+    geom_text(data = annot_tb, aes(x, y, label = lab)) |>
+    base_facet("am")
 }
