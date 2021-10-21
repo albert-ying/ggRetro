@@ -90,6 +90,8 @@ base_mode = function(p, i = 1, smart_label = T) {
 #' @importFrom ggplot2 geom_point ggplot_build
 #' @importFrom tibble as_tibble
 #' @importFrom glue glue
+#' @importFrom stringr str_c
+#' @importFrom purrr map
 #' @importFrom patchwork wrap_plots
 #' @importFrom dplyr group_by_at group_split group_keys
 #' @export
@@ -101,7 +103,7 @@ base_facet = function(
   label_format_string = "{var.value}",
   label_column = NA,
   smart_label = T,
-  guides = "collect",
+  guides = "auto",
   ...
 ) {
   px = p 
@@ -114,8 +116,9 @@ base_facet = function(
     group_split()
   layer_datals = map(px$layers, ~{
     if(is.data.frame(.x$data)) {
-      if (all(facets %in% colnames(.x$data))) {
+      if (any(facets %in% colnames(.x$data))) {
         .x$data |>
+          right_join(datakey) |>
           group_by_at(facets) |>
           group_split()
       } else {
@@ -143,7 +146,7 @@ base_facet = function(
       }
       if (c == 1) {
         facet.name = name } else {
-        facet.name = str_c(facet_name, "\n", name)
+        facet.name = str_c(facet.name, "\n", name)
       }
     }
     pfacet = base_mode({
@@ -162,6 +165,7 @@ if (FALSE) {
   library(ggRetro)
   library(ggplot2)
   library(dplyr)
+  library(stringr)
   oh_my_ggplot()
 
   annot_tb = data.frame(x = c(18,24), y = c(4.5,3.0), am = c(0,1), lab = c("Hi", "There"))
@@ -169,14 +173,15 @@ if (FALSE) {
     # mutate(carb = as.factor(carb)) |>
     ggplot() +
     geom_point(aes(mpg, wt, fill = carb)) +
-    labs(title="hello") +
     geom_text(data = annot_tb, aes(x, y, label = lab))
   p
   p |>
     base_mode()
 
   p |>
-    base_facet("am", guides = "auto", nrow = 2)
+    base_facet(c("am", "vs"), guides = "auto", nrow = 2)
   
+  facets = c("am", "vs")
+
   base_facet(p2,"am")
 }
