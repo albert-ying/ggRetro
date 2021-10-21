@@ -1,34 +1,49 @@
+`ggRetro`
+===
 
-`ggplot2pipes`
-==============================================================================
-
-
-
-
-`ggplot2pipes` is a package for creating pipe-enabled versions of `ggplot2` functions.
-
+`ggRetro` is a package for creating floating axises.
 
 Basic Usage
-------------------------------------------------------------------------------
+-----------
 
-1. Call `init_ggplot2_pipes()` to create all the pipe-enabled functions
-2. Use the new functions with dplyr/magrittr pipes
-
-
-```r
+```
 library(dplyr)
 library(ggplot2)
-library(ggplot2pipes)
+library(ggRetro)
 
-init_ggplot2_pipes()
+p = ggplot(mtcars) +
+  geom_line(aes(mpg, wt)) +
+  labs(title="hello") +
+  theme_bw()
+p |> base_mode()
 
-ggplot(mtcars) %>%
-  add_geom_line(aes(mpg, wt)) %>%
-  add_labs(title="hello") %>%
-  add_theme_bw() %>%
-  add_facet_wrap(~am)
+## [1] "Both numeric"
 ```
 
-![plot of chunk unnamed-chunk-1](figure/unnamed-chunk-1-1.png)
+![](README_files/figure-markdown_strict/unnamed-chunk-1-1.png)
 
+For Facet plot
+--------------
 
+```
+p |> base_facet(c("vs"))
+
+## [1] "Both numeric"
+## [1] "Both numeric"
+```
+
+![](README_files/figure-markdown_strict/unnamed-chunk-2-1.png)
+
+Better default theme with `oh_my_ggplot`
+
+---
+
+```
+oh_my_ggplot()
+
+p |> base_mode()
+
+## [1] "Both numeric"
+```
+
+![](README_files/figure-markdown_strict/unnamed-chunk-3-1.png)
