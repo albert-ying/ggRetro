@@ -27,7 +27,6 @@ library(ggRetro)
 
 p = ggplot(mtcars) +
   geom_line(aes(mpg, wt)) +
-  labs(title="hello") +
   theme_bw()
 p |> base_mode()
 ```
