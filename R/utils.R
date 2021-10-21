@@ -52,13 +52,16 @@ smart_lab = function(lab) {
 #' @importFrom ggplot2 geom_point ggplot_build
 #' @importFrom tibble as_tibble
 #' @importFrom purrr map
+#' @importFrom dplyr bind_rows
 #' @export
 #-----------------------------------------------------------------------------
 
 base_mode = function(p, i = 1, smart_label = T) {
   # px = p + geom_point()
   px = p
-  p_tb = ggplot_build(px)$data[[length(ggplot_build(px)$data)]] |> as_tibble()
+  p_tb = ggplot_build(px)$data |>
+    bind_rows() |>
+    as_tibble()
   if (class(p_tb$x)[1] != "mapped_discrete" & class(p_tb$y)[1] != "mapped_discrete") {
     print("Both numeric")
     np = p + base_breaks(p_tb$x, p_tb$y)
