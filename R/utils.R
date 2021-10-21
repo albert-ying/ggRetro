@@ -156,47 +156,27 @@ base_facet = function(
 }
 
 #-----------------------------------------------------------------------------
-#' better_ggplot_default()
-#' @importFrom ggthemes geom_rangeframe theme_tufte
-#' @importFrom ggplot2 geom_point ggplot_build
-#' @importFrom hrbrthemes theme_ipsum
-#' @importFrom ggtext element_markdown
-#' @importFrom ggsci scale_color_npg scale_fill_npg
-#' @export
-#-----------------------------------------------------------------------------
-
-oh_my_ggplot = function() {
-  ## change global theme settings (for all following plots)
-  ## fall back theme
-  theme_set(
-   theme_ipsum(plot_title_size = 28, subtitle_size = 22, base_size = 18, axis_title_size = 24, strip_text_size = 22, base_family = "Helvetica", axis_title_just = "mc") +
-     theme(
-       plot.title.position = "plot", plot.caption.position = "plot", legend.position = "right", plot.margin = margin(25, 25, 10, 25),
-       axis.ticks = element_line(color = "grey92"), panel.grid.major = element_blank(),
-       legend.text = element_text(color = "grey30"),
-       plot.subtitle = element_text(color = "grey30"),
-       plot.caption = element_text(margin = margin(t = 15))
-     ) +
-   theme(plot.title = element_markdown(), plot.subtitle = element_markdown(), plot.caption = element_markdown(margin = margin(t = 15)), axis.title.x = element_markdown(), axis.title.y = element_markdown())
-  )
-  
-}
-
-#-----------------------------------------------------------------------------
 # debug
 #-----------------------------------------------------------------------------
 if (FALSE) {
-  library(tidyverse)
-  library(dplyr)
+  library(ggRetro)
   library(ggplot2)
-  library(patchwork)
-  library(glue)
+  library(dplyr)
   oh_my_ggplot()
 
-  annot_tb = tibble(x = c(18,24), y = c(4.5,3.0), am = c(0,1), lab = c("Hi", "There"))
- p = ggplot(mtcars) |>
-    geom_line(aes(mpg, wt, color = as.factor(carb))) |>
-    labs(title="hello") |>
-    geom_text(data = annot_tb, aes(x, y, label = lab)) |>
-    base_facet("am")
+  annot_tb = data.frame(x = c(18,24), y = c(4.5,3.0), am = c(0,1), lab = c("Hi", "There"))
+  p = mtcars |>
+    # mutate(carb = as.factor(carb)) |>
+    ggplot() +
+    geom_point(aes(mpg, wt, fill = carb)) +
+    labs(title="hello") +
+    geom_text(data = annot_tb, aes(x, y, label = lab))
+  p
+  p |>
+    base_mode()
+
+  p |>
+    base_facet("am", guides = "auto", nrow = 2)
+  
+  base_facet(p2,"am")
 }
