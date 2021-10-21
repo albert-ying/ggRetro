@@ -1,7 +1,7 @@
 `ggRetro`
 =========
 
-`ggRetro` is a package for creating floating axises, like in base R.
+`ggRetro` is a package for creating floating axes, like in base R.
 
 Basic Usage
 -----------
