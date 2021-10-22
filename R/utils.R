@@ -5,7 +5,27 @@
 #' @param y func_regex Regular expression to filter the list of ggplot functions to make pipe-enabled.  The default regex will capture all
 #' @param scale_x
 #' @param scale_y
-#' @importFrom ggthemes geom_rangeframe theme_tufte
+#' @importFrom ggplot2 geom_point ggplot_build scale_x_continuous scale_y_continuous theme element_line element_blank aes unit
+#' @export
+#-----------------------------------------------------------------------------
+theme_tufte <- function (ticks = TRUE) {
+    ret <- theme(legend.background = element_blank(), legend.key = element_blank(),               
+            panel.background = element_blank(), panel.border = element_blank(),                
+            strip.background = element_blank(), plot.background = element_blank(),             
+            axis.line = element_blank(), panel.grid = element_blank())                         
+    if (!ticks) {
+        ret <- ret + theme(axis.ticks = element_blank())                                       
+    }
+    ret
+}
+#-----------------------------------------------------------------------------
+#' Mimic Base R break
+#' @param x string with which to prefix names of \code{ggplot2} functions in order to name the pipe-enabled functions. default: "add_".
+#'               Note: You could set this the empty string, in which case the new functions would mask the name of the library function
+#' @param y func_regex Regular expression to filter the list of ggplot functions to make pipe-enabled.  The default regex will capture all
+#' @param scale_x
+#' @param scale_y
+#' @importFrom ggthemes geom_rangeframe 
 #' @importFrom ggplot2 geom_point ggplot_build scale_x_continuous scale_y_continuous theme element_line element_blank aes unit
 #' @export
 #-----------------------------------------------------------------------------
@@ -26,7 +46,7 @@ base_breaks <- function(x, y, scale_x = T, scale_y = T) {
   }
   d = data.frame(x=c(min(b1), max(b1)), y=c(min(b2), max(b2)))
   list(
-    sx, sy, geom_rangeframe(data = d, aes(x=x, y=y), inherit.aes = FALSE), ggthemes::theme_tufte(base_size = 18, base_family = "Helvetica"), theme(axis.ticks = element_line(size = 0.25, color = "black"), axis.ticks.length = unit(.6, "lines"), panel.grid.minor = element_blank())
+    sx, sy, geom_rangeframe(data = d, aes(x=x, y=y), inherit.aes = FALSE), theme_tufte(), theme(axis.ticks = element_line(size = 0.25, color = "black"), axis.ticks.length = unit(.6, "lines"), panel.grid.minor = element_blank())
   )
 }
 

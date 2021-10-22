@@ -11,7 +11,7 @@ base_facet(
   label_format_string = "{var.value}",
   label_column = NA,
   smart_label = T,
-  guides = "collect",
+  guides = "auto",
   ...
 )
 }
