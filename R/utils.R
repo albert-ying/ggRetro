@@ -46,7 +46,17 @@ base_breaks <- function(x, y, scale_x = T, scale_y = T) {
   }
   d = data.frame(x=c(min(b1), max(b1)), y=c(min(b2), max(b2)))
   list(
-    sx, sy, geom_rangeframe(data = d, aes(x=x, y=y), inherit.aes = FALSE), theme_tufte(), theme(axis.ticks = element_line(size = 0.25, color = "black"), axis.ticks.length = unit(.6, "lines"), panel.grid.minor = element_blank())
+    sx,
+    sy,
+    geom_rangeframe(data = d, aes(x=x, y=y), inherit.aes = FALSE),
+    theme_tufte(),
+    theme(
+      axis.ticks = element_line(size = 0.25, color = "black"),
+      axis.ticks.x = element_line(size = 0.25, color = "black"),
+      axis.ticks.y = element_line(size = 0.25, color = "black"),
+      axis.ticks.length = unit(.6, "lines"),
+      panel.grid.minor = element_blank()
+    )
   )
 }
 
