@@ -166,7 +166,7 @@ base_facet = function(
       }
       if (c == 1) {
         facet.name = name } else {
-        facet.name = str_c(facet.name, "\n", name)
+        facet.name = str_c(facet.name, "<br>", name)
       }
     }
     pfacet = base_mode({
