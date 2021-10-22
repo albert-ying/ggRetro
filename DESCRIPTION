@@ -1,7 +1,7 @@
 Package: ggRetro
 Type: Package
 Title: Create base-like ggplot 
-Version: 0.1.0
+Version: 0.1.1
 Author: albert-ying
 Maintainer: albert-ying <albert.k.ying@gmail.com>
 Description: Create base-like ggplot
