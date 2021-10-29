@@ -211,11 +211,15 @@ base_facet = function(
     }
     pfacet = psub +
         labs(subtitle = facet.name)
-    if (!.x %in% left_edge) {
-      pfacet = pfacet + labs(y = "")
-    }
     if (!.x %in% bottom_edge) {
-      pfacet = pfacet + labs(x = "")
+      pfacet = pfacet +
+        labs(x = "") +
+        theme(plot.margin = margin(b = 0))
+    }
+    if (!.x %in% left_edge) {
+      pfacet = pfacet +
+        labs(y = "") +
+        theme(plot.margin = margin(l = 0, r = 0))
     }
     if (scales == "fixed") {
       pfacet = pfacet +
