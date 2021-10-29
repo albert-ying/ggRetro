@@ -129,7 +129,7 @@ base_mode = function(p, i = 1, smart_label = T) {
 base_facet = function(
   p,
   facets,
-  scales = "free_",
+  scales = "free",
   label_format_number = "{var.name} = {var.value}",
   label_format_string = "{var.value}",
   label_column = NA,
@@ -139,64 +139,91 @@ base_facet = function(
   ncol = "auto",
   ...
 ) {
-  # todo compute nrow ncol, if not given
   px = p 
   raw_data = px$data
   datakey = raw_data |>
     group_by_at(facets) |>
     group_keys()
-  if (scales == "free_") {
-    datals = raw_data |>
-      group_by_at(facets) |>
-      group_split()
-    layer_datals = map(px$layers, ~{
-      if(is.data.frame(.x$data)) {
-        if (any(facets %in% colnames(.x$data))) {
-          .x$data |>
-            right_join(datakey) |>
-            group_by_at(facets) |>
-            group_split()
-        } else {
-          return(NA)
-        }
+  # compute nrow ncol of patchwork plot, if not given
+  nplot = nrow(datakey)
+  if (nrow == "auto" & ncol == "auto") {
+    nrow = floor(sqrt(nplot))
+    ncol = ceiling(sqrt(nplot))
+  } else if (nrow == "auto") {
+    nrow = ceiling(nplot / ncol)
+  } else if (ncol == "auto") {
+    ncol = ceiling(nplot / nrow)
+  }
+  # Given N plot, nrow and ncol, which plots are at left edge
+  left_edge = seq(1, nplot, by = ncol)
+  bottom_edge = seq(nplot-ncol+1, nplot, by = 1)
+  # Get main data, split by group
+  datals = raw_data |>
+    group_by_at(facets) |>
+    group_split()
+  # Get data at other layers, split by group
+  layer_datals = map(px$layers, ~{
+    if(is.data.frame(.x$data)) {
+      if (any(facets %in% colnames(.x$data))) {
+        .x$data |>
+          right_join(datakey) |>
+          group_by_at(facets) |>
+          group_split()
       } else {
         return(NA)
       }
-    })
-    plot_list = map(1:length(datals), ~ {
-      psub = unserialize(serialize(px,NULL))
-      psub$data = datals[[.x]]
-      for (i in 1:length(psub$layers)) {
-        if (any(!is.na(layer_datals[[i]]))) {
-          psub$layers[[i]]$data = layer_datals[[i]][[.x]]
-        }
-      }
-      for (c in 1:length(facets)) {
-        var.name = facets[c] |> smart_lab()
-        var.value = datakey[[.x, c]]
-        if (is.numeric(var.value)) {
-          name = glue(label_format_number)
-        } else {
-          name = glue(label_format_string)
-        }
-        if (c == 1) {
-          facet.name = name } else {
-          facet.name = str_c(facet.name, "<br>", name)
-        }
-      }
-      pfacet = base_mode({
-        psub +
-          labs(subtitle = facet.name)
-      })
-      return(pfacet)
-    })
-    wrap_plots(plot_list, guides = guides, ...)
-  } else {
-    if (scales == "fixed") {
-      {p + facet_wrap(facets, scales = "free")} |>
-        base_mode(smart_label = T)
+    } else {
+      return(NA)
     }
-  }
+  })
+  ## Get ancors
+  cord_set = ggplot_build(px)$data |>
+    bind_rows()
+  x_max = max(cord_set$x)
+  x_min = min(cord_set$x)
+  y_max = max(cord_set$y)
+  y_min = min(cord_set$y)
+
+  plot_list = map(1:length(datals), ~ {
+    psub = unserialize(serialize(px,NULL))
+    psub$data = datals[[.x]]
+    # Change the data in each layers in place
+    for (i in 1:length(psub$layers)) {
+      if (any(!is.na(layer_datals[[i]]))) {
+        psub$layers[[i]]$data = layer_datals[[i]][[.x]]
+      }
+    }
+    # get fact label
+    for (c in 1:length(facets)) {
+      var.name = facets[c] |> smart_lab()
+      var.value = datakey[[.x, c]]
+      if (is.numeric(var.value)) {
+        name = glue(label_format_number)
+      } else {
+        name = glue(label_format_string)
+      }
+      if (c == 1) {
+        facet.name = name } else {
+        facet.name = str_c(facet.name, "<br>", name)
+      }
+    }
+    pfacet = psub +
+        labs(subtitle = facet.name)
+    if (!.x %in% left_edge) {
+      pfacet = pfacet + labs(y = "")
+    }
+    if (!.x %in% bottom_edge) {
+      pfacet = pfacet + labs(x = "")
+    }
+    if (scales == "fixed") {
+      pfacet = pfacet +
+        geom_blank(aes(x = x_min, y = y_min)) +
+        geom_blank(aes(x = x_max, y = y_max))
+    }
+    pfacet = base_mode(pfacet)
+    return(pfacet)
+  })
+  wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...)
 }
 
 #-----------------------------------------------------------------------------
@@ -211,8 +238,8 @@ if (FALSE) {
   library(glue)
   library(patchwork)
   library(ggthemes)
+  library(ohmyggplot)
   oh_my_ggplot()
-
   annot_tb = data.frame(x = c(18,24), y = c(4.5,3.0), am = c(0,1), lab = c("Hi", "There"))
   p = mtcars |>
     # mutate(carb = as.factor(carb)) |>
@@ -220,7 +247,19 @@ if (FALSE) {
     geom_point() +
     geom_text(data = annot_tb, aes(x, y, label = lab))
   p
-  p + ggthemes::theme_tufte() + ggthemes::geom_rangeframe(color = 'black')
+
+  facets = c("am", "vs")
+  scales = "free_"
+  label_format_number = "{var.name} = {var.value}"
+  label_format_string = "{var.value}"
+  label_column = NA
+  smart_label = T
+  guides = "auto"
+  nrow = "auto"
+  ncol = "auto"
+
+
+  p |> base_facet(c("am", "vs"), scales = "fixed")
 
   face = p + facet_wrap(~am, scale = "fixed")
   bface = base_mode(face)
