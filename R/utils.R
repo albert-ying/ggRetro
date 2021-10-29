@@ -92,19 +92,21 @@ base_mode = function(p, i = 1, smart_label = T) {
   p_tb = ggplot_build(px)$data |>
     bind_rows() |>
     as_tibble()
+  options(warn = -1)
   if (class(p_tb$x)[1] != "mapped_discrete" & class(p_tb$y)[1] != "mapped_discrete") {
     print("Both numeric")
-    np = p + base_breaks(p_tb$x, p_tb$y)
+    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), c(p_tb$y, p_tb$ymin, p_tb$ymax))
   } else if (class(p_tb$x)[1] != "mapped_discrete") {
     print("x numeric")
-    np = p + base_breaks(p_tb$x, p_tb$y |> round(), scale_y = F)
+    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), p_tb$y |> round(), scale_y = F)
   } else if (class(p_tb$y)[1] != "mapped_discrete") {
     print("y numeric")
-    np = p + base_breaks(p_tb$x |> round(), p_tb$y, scale_x = F)
+    np = p + base_breaks(p_tb$x |> round(), c(p_tb$y, p_tb$ymin, p_tb$ymax), scale_x = F)
   } else {
     print("no numeric")
     np = p + geom_rangeframe()
   }
+  options(warn = 0)
   if (smart_label) {
     np$labels = np$labels |>
       map(smart_lab)
@@ -223,7 +225,7 @@ base_facet = function(
     pfacet = base_mode(pfacet)
     return(pfacet)
   })
-  wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...)
+  wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...) & theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(0,0,0,0)))
 }
 
 #-----------------------------------------------------------------------------
@@ -239,14 +241,19 @@ if (FALSE) {
   library(patchwork)
   library(ggthemes)
   library(ohmyggplot)
+  library(hrbrthemes)
+  library(ggtext)
   oh_my_ggplot()
   annot_tb = data.frame(x = c(18,24), y = c(4.5,3.0), am = c(0,1), lab = c("Hi", "There"))
+  update_geom_defaults("point",list(fill = "coral", size=3, stroke=.6, shape=21))
+  update_geom_defaults("smooth",list(color = "firebrick", fill = "firebrick", alpha = 0.05))
   p = mtcars |>
     # mutate(carb = as.factor(carb)) |>
     ggplot(aes(mpg, wt)) +
     geom_point() +
-    geom_text(data = annot_tb, aes(x, y, label = lab))
-  p
+    geom_text(data = annot_tb, aes(x, y, label = lab)) +
+    geom_smooth(se = T)
+  base_mode(p)
 
   facets = c("am", "vs")
   scales = "free_"
@@ -258,8 +265,7 @@ if (FALSE) {
   nrow = "auto"
   ncol = "auto"
 
-
-  p |> base_facet(c("am", "vs"), scales = "fixed")
+  p |> base_facet(c("am", "vs"), scales = "free")
 
   face = p + facet_wrap(~am, scale = "fixed")
   bface = base_mode(face)
