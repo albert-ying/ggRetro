@@ -7,11 +7,16 @@
 base_facet(
   p,
   facets,
+  scales = "free",
   label_format_number = "{var.name} = {var.value}",
   label_format_string = "{var.value}",
   label_column = NA,
   smart_label = T,
   guides = "auto",
+  nrow = "auto",
+  ncol = "auto",
+  after_dat = NA,
+  after_fun = NA,
   ...
 )
 }

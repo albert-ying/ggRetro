@@ -82,17 +82,18 @@ smart_lab = function(lab) {
 #' @importFrom ggplot2 geom_point ggplot_build
 #' @importFrom tibble as_tibble
 #' @importFrom purrr map
-#' @importFrom dplyr bind_rows
+#' @importFrom dplyr bind_rows select
 #' @export
 #-----------------------------------------------------------------------------
 
 base_mode = function(p, i = 1, smart_label = T) {
   # px = p + geom_point()
   px = p
+  options(warn = -1)
   p_tb = ggplot_build(px)$data |>
+    map(~ {.x[,colnames(.x) %in% c("x", "y", "xmin", "xmax", "ymin", "ymax")]}) |>
     bind_rows() |>
     as_tibble()
-  options(warn = -1)
   if (class(p_tb$x)[1] != "mapped_discrete" & class(p_tb$y)[1] != "mapped_discrete") {
     print("Both numeric")
     np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), c(p_tb$y, p_tb$ymin, p_tb$ymax))
@@ -123,7 +124,7 @@ base_mode = function(p, i = 1, smart_label = T) {
 #' @importFrom tibble as_tibble
 #' @importFrom glue glue
 #' @importFrom stringr str_c
-#' @importFrom purrr map
+#' @importFrom purrr map transpose
 #' @importFrom patchwork wrap_plots
 #' @importFrom dplyr group_by_at group_split group_keys
 #' @export
@@ -139,6 +140,8 @@ base_facet = function(
   guides = "auto",
   nrow = "auto",
   ncol = "auto",
+  after_dat = NA,
+  after_fun = NA,
   ...
 ) {
   px = p 
@@ -178,13 +181,34 @@ base_facet = function(
       return(NA)
     }
   })
+  # handel "after_dat"
+  if (is.list(after_dat)) {
+    if (is.data.frame(after_dat)) {
+      after_dat_ls = after_dat |>
+        right_join(datakey) |>
+        group_by_at(facets) |>
+        group_split()
+    } else {
+      after_dat_ls = after_dat |>
+        map(~{.x |>
+          right_join(datakey) |>
+          group_by_at(facets) |>
+          group_split()}) |>
+          purrr::transpose()
+    }
+  }
   ## Get ancors
+  options(warn = -1)
   cord_set = ggplot_build(px)$data |>
-    bind_rows()
-  x_max = max(cord_set$x)
-  x_min = min(cord_set$x)
-  y_max = max(cord_set$y)
-  y_min = min(cord_set$y)
+    map(~ {
+      cbind(x = .x$x, y = .x$y, xmin = .x$xmin, xmax = .x$xmax, ymin = .x$ymin, ymax = .x$ymax) |>
+        as_tibble()
+    }) |> bind_rows()
+  x_max = max(c(cord_set$x, cord_set$xmax))
+  x_min = min(c(cord_set$x, cord_set$xmin))
+  y_max = max(c(cord_set$y, cord_set$ymax))
+  y_min = min(c(cord_set$y, cord_set$ymin))
+  options(warn = 0)
 
   plot_list = map(1:length(datals), ~ {
     psub = unserialize(serialize(px,NULL))
@@ -227,11 +251,41 @@ base_facet = function(
         geom_blank(aes(x = x_max, y = y_max))
     }
     pfacet = base_mode(pfacet)
+    if (is.function(after_fun)) {
+      if (is.list(after_dat)) {
+        data = after_dat_ls[[.x]]
+        pfacet = pfacet + after_fun(data)
+      } else {
+        pfacet = pfacet + after_fun()
+      }
+    }
     return(pfacet)
   })
-  wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...) & theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(0,0,0,0)))
+  wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...) & theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(0,5,0,0)))
 }
 
+#-----------------------------------------------------------------------------
+#' Helper after_fun : pvalue
+#' @param data
+#' @importFrom ggpubr stat_pvalue_manual
+#' @export
+#-----------------------------------------------------------------------------
+add_pval = function(data) {
+  tryCatch(
+    {
+      stat_pvalue_manual(
+        data,
+        label = "p.adj.signif",
+        inherit.aes = F,
+        hide.ns = T,
+        step.increase = 0.08,
+        bracket.nudge.y = 0.5
+      )
+    },
+    error = function(err) {
+   }
+  )
+}
 #-----------------------------------------------------------------------------
 # debug
 #-----------------------------------------------------------------------------
