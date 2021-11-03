@@ -8,7 +8,7 @@
 #' @importFrom ggplot2 geom_point ggplot_build scale_x_continuous scale_y_continuous theme element_line element_blank aes unit
 #' @export
 #-----------------------------------------------------------------------------
-theme_tufte <- function (ticks = TRUE) {
+theme_tufte2 <- function (ticks = TRUE) {
     ret <- theme(legend.background = element_blank(), legend.key = element_blank(),               
             panel.background = element_blank(), panel.border = element_blank(),                
             strip.background = element_blank(), plot.background = element_blank(),             
@@ -41,7 +41,12 @@ base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = "auto", y_la
   } else {
     b1 = as.factor(x) |> as.numeric()
     if (x_lab_fun == "auto") {
-      sx = scale_x_discrete(labels = label_wrap(10))
+      sx = scale_x_discrete(labels = function(x) {
+        unlist(lapply(strwrap(x, width = 10, simplify = FALSE),
+          paste0,
+          collapse = "<br>"
+        ))
+      })
     } else {
       sx = scale_x_discrete(labels = x_lab_fun)
     }
@@ -56,7 +61,12 @@ base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = "auto", y_la
   } else {
     b2 = as.factor(y) |> as.numeric()
     if (y_lab_fun == "auto") {
-      sy = scale_y_discrete(labels = label_wrap(10))
+      sy = scale_y_continuous(labels = function(x) {
+        unlist(lapply(strwrap(x, width = 10, simplify = FALSE),
+          paste0,
+          collapse = "<br>"
+        ))
+      })
     } else {
       sy = scale_y_discrete(labels = y_lab_fun)
     }
@@ -65,12 +75,12 @@ base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = "auto", y_la
   list(
     sx,
     sy,
-    geom_rangeframe(data = d, aes(x=x, y=y), size = 1, inherit.aes = FALSE),
-    theme_tufte(),
+    geom_rangeframe(data = d, aes(x=x, y=y), size = 0.7, inherit.aes = FALSE),
+    theme_tufte2(),
     theme(
-      axis.ticks = element_line(size = 1, color = "black"),
-      axis.ticks.x = element_line(size = 1, color = "black"),
-      axis.ticks.y = element_line(size = 1, color = "black"),
+      axis.ticks = element_line(size = 0.7, color = "black"),
+      axis.ticks.x = element_line(size = 0.7, color = "black"),
+      axis.ticks.y = element_line(size = 0.7, color = "black"),
       axis.ticks.length = unit(.6, "lines"),
       panel.grid.minor = element_blank()
     ),
@@ -252,11 +262,10 @@ base_facet = function(
       }
       if (c == 1) {
         facet.name = name } else {
-        facet.name = str_c(facet.name, "<br>", name)
+        facet.name = str_c(facet.name, "<br><br>", name)
       }
     }
-    pfacet = psub +
-        labs(subtitle = facet.name)
+    pfacet = psub
     if (!.x %in% bottom_edge) {
       pfacet = pfacet +
         labs(x = "") +
@@ -272,7 +281,8 @@ base_facet = function(
         geom_blank(aes(x = x_min, y = y_min)) +
         geom_blank(aes(x = x_max, y = y_max))
     }
-    pfacet = base_mode(pfacet, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
+    pfacet = base_mode(pfacet, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun) +
+      labs(subtitle = facet.name)
     if (is.function(after_fun)) {
       if (is.list(after_dat)) {
         data = after_dat_ls[[.x]]
@@ -284,7 +294,7 @@ base_facet = function(
     return(pfacet)
   })
   wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...) &
- theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(0,5,0,0)))
+ theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(t = 10)))
 }
 
 #-----------------------------------------------------------------------------
@@ -301,8 +311,12 @@ add_pval = function(data) {
         label = "p.adj.signif",
         inherit.aes = F,
         hide.ns = T,
-        step.increase = 0.08,
-        bracket.nudge.y = 0.5
+        label.size = 8,
+        bracket.size = 0.6,
+        tip.length = 0.02,
+        step.increase = 0.05,
+        bracket.nudge.y = 1,
+        vjust = 0.65 
       )
     },
     error = function(err) {
