@@ -4,7 +4,14 @@
 \alias{base_breaks}
 \title{Mimic Base R break}
 \usage{
-base_breaks(x, y, scale_x = T, scale_y = T)
+base_breaks(
+  x,
+  y,
+  scale_x = T,
+  scale_y = T,
+  x_lab_fun = "auto",
+  y_lab_fun = "auto"
+)
 }
 \arguments{
 \item{x}{string with which to prefix names of \code{ggplot2} functions in order to name the pipe-enabled functions. default: "add_".

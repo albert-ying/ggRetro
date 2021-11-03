@@ -12,9 +12,11 @@ base_facet(
   label_format_string = "{var.value}",
   label_column = NA,
   smart_label = T,
-  guides = "auto",
+  guides = "collect",
   nrow = "auto",
   ncol = "auto",
+  x_lab_fun = "auto",
+  y_lab_fun = "auto",
   after_dat = NA,
   after_fun = NA,
   ...

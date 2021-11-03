@@ -26,37 +26,55 @@ theme_tufte <- function (ticks = TRUE) {
 #' @param scale_x
 #' @param scale_y
 #' @importFrom ggthemes geom_rangeframe 
-#' @importFrom ggplot2 geom_point ggplot_build scale_x_continuous scale_y_continuous theme element_line element_blank aes unit
+#' @importFrom scales label_wrap
+#' @importFrom ggplot2 geom_point ggplot_build scale_x_continuous scale_y_continuous theme element_line element_blank aes unit coord_cartesian
 #' @export
 #-----------------------------------------------------------------------------
-base_breaks <- function(x, y, scale_x = T, scale_y = T) {
+base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = "auto", y_lab_fun = "auto") {
   if (scale_x) {
     b1 = pretty(x)
-    sx = scale_x_continuous(breaks=b1)
+    if (x_lab_fun == "auto") {
+      sx = scale_x_continuous(breaks=b1)
+    } else {
+      sx = scale_x_continuous(breaks=b1, labels=x_lab_fun)
+    }
   } else {
     b1 = as.factor(x) |> as.numeric()
-    sx = NULL
+    if (x_lab_fun == "auto") {
+      sx = scale_x_discrete(labels = label_wrap(10))
+    } else {
+      sx = scale_x_discrete(labels = x_lab_fun)
+    }
   }
   if (scale_y) {
     b2 = pretty(y)
-    sy = scale_y_continuous(breaks=b2)
+    if (y_lab_fun == "auto") {
+      sy = scale_y_continuous(breaks=b2)
+    } else {
+      sy = scale_y_continuous(breaks=b2, labels=y_lab_fun)
+    }
   } else {
     b2 = as.factor(y) |> as.numeric()
-    sy = NULL
+    if (y_lab_fun == "auto") {
+      sy = scale_y_discrete(labels = label_wrap(10))
+    } else {
+      sy = scale_y_discrete(labels = y_lab_fun)
+    }
   }
   d = data.frame(x=c(min(b1), max(b1)), y=c(min(b2), max(b2)))
   list(
     sx,
     sy,
-    geom_rangeframe(data = d, aes(x=x, y=y), inherit.aes = FALSE),
+    geom_rangeframe(data = d, aes(x=x, y=y), size = 1, inherit.aes = FALSE),
     theme_tufte(),
     theme(
-      axis.ticks = element_line(size = 0.25, color = "black"),
-      axis.ticks.x = element_line(size = 0.25, color = "black"),
-      axis.ticks.y = element_line(size = 0.25, color = "black"),
+      axis.ticks = element_line(size = 1, color = "black"),
+      axis.ticks.x = element_line(size = 1, color = "black"),
+      axis.ticks.y = element_line(size = 1, color = "black"),
       axis.ticks.length = unit(.6, "lines"),
       panel.grid.minor = element_blank()
-    )
+    ),
+    coord_cartesian(clip = "off")
   )
 }
 
@@ -78,7 +96,7 @@ smart_lab = function(lab) {
 #' @param i Regular expression to filter the list of ggplot functions to make pipe-enabled.  The default regex will capture all
 #' @param  smart_label Regular expression to filter the list of ggplot functions to make pipe-enabled.  The default regex will capture all
 #'                   stats and geoms and some other misc stuff.
-#' @importFrom ggthemes geom_rangeframe theme_tufte
+#' @importFrom ggthemes geom_rangeframe
 #' @importFrom ggplot2 geom_point ggplot_build
 #' @importFrom tibble as_tibble
 #' @importFrom purrr map
@@ -86,7 +104,7 @@ smart_lab = function(lab) {
 #' @export
 #-----------------------------------------------------------------------------
 
-base_mode = function(p, i = 1, smart_label = T) {
+base_mode = function(p, i = 1, smart_label = T, x_lab_fun = "auto", y_lab_fun = "auto") {
   # px = p + geom_point()
   px = p
   options(warn = -1)
@@ -96,16 +114,17 @@ base_mode = function(p, i = 1, smart_label = T) {
     as_tibble()
   if (class(p_tb$x)[1] != "mapped_discrete" & class(p_tb$y)[1] != "mapped_discrete") {
     print("Both numeric")
-    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), c(p_tb$y, p_tb$ymin, p_tb$ymax))
+    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), c(p_tb$y, p_tb$ymin, p_tb$ymax), x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
   } else if (class(p_tb$x)[1] != "mapped_discrete") {
     print("x numeric")
-    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), p_tb$y |> round(), scale_y = F)
+    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), p_tb$y |> round(), scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
   } else if (class(p_tb$y)[1] != "mapped_discrete") {
     print("y numeric")
-    np = p + base_breaks(p_tb$x |> round(), c(p_tb$y, p_tb$ymin, p_tb$ymax), scale_x = F)
+    np = p + base_breaks(p_tb$x |> round(), c(p_tb$y, p_tb$ymin, p_tb$ymax), scale_x = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
   } else {
     print("no numeric")
-    np = p + geom_rangeframe()
+    # np = p + geom_rangeframe()
+    np = p + base_breaks(round(p_tb$x), round(p_tb$y), scale_x = F, scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
   }
   options(warn = 0)
   if (smart_label) {
@@ -127,6 +146,7 @@ base_mode = function(p, i = 1, smart_label = T) {
 #' @importFrom purrr map transpose
 #' @importFrom patchwork wrap_plots
 #' @importFrom dplyr group_by_at group_split group_keys
+#' @importFrom ggtext element_markdown
 #' @export
 #-----------------------------------------------------------------------------
 base_facet = function(
@@ -137,9 +157,11 @@ base_facet = function(
   label_format_string = "{var.value}",
   label_column = NA,
   smart_label = T,
-  guides = "auto",
+  guides = "collect",
   nrow = "auto",
   ncol = "auto",
+  x_lab_fun = "auto",
+  y_lab_fun = "auto",
   after_dat = NA,
   after_fun = NA,
   ...
@@ -250,7 +272,7 @@ base_facet = function(
         geom_blank(aes(x = x_min, y = y_min)) +
         geom_blank(aes(x = x_max, y = y_max))
     }
-    pfacet = base_mode(pfacet)
+    pfacet = base_mode(pfacet, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
     if (is.function(after_fun)) {
       if (is.list(after_dat)) {
         data = after_dat_ls[[.x]]
@@ -261,7 +283,8 @@ base_facet = function(
     }
     return(pfacet)
   })
-  wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...) & theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(0,5,0,0)))
+  wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...) &
+ theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(0,5,0,0)))
 }
 
 #-----------------------------------------------------------------------------
@@ -311,7 +334,9 @@ if (FALSE) {
     geom_point() +
     geom_text(data = annot_tb, aes(x, y, label = lab)) +
     geom_smooth(se = T)
-  base_mode(p)
+  p2 = base_mode(p) + ggplot2::coord_cartesian(clip = "off")
+
+  ggsave("./test.pdf", p2, w = 10, h = 8)
 
   facets = c("am", "vs")
   scales = "free_"
@@ -338,7 +363,7 @@ ggplot(mtcars, aes(wt, mpg)) +
  geom_point(x = 0, y= 0, color = "white", size = 2) +
  facet_wrap("am") +
  geom_rangeframe(color = c("red")) +
- coord_cartesian(clip="off") +
+#  coord_cartesian(clip="off") +
  theme_tufte()
   p |>
     base_facet(c("am", "vs"), guides = "auto", nrow = 2, scales = "fixed")

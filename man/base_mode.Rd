@@ -4,7 +4,7 @@
 \alias{base_mode}
 \title{Mimic Base R break}
 \usage{
-base_mode(p, i = 1, smart_label = T)
+base_mode(p, i = 1, smart_label = T, x_lab_fun = "auto", y_lab_fun = "auto")
 }
 \arguments{
 \item{p}{string with which to prefix names of \code{ggplot2} functions in order to name the pipe-enabled functions. default: "add_".
