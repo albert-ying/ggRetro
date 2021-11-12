@@ -185,7 +185,7 @@ base_facet = function(
   nplot = nrow(datakey)
   if (nrow == "auto" & ncol == "auto") {
     nrow = floor(sqrt(nplot))
-    ncol = ceiling(sqrt(nplot))
+    ncol = ceiling(nplot / nrow)
   } else if (nrow == "auto") {
     nrow = ceiling(nplot / ncol)
   } else if (ncol == "auto") {
@@ -294,7 +294,7 @@ base_facet = function(
     return(pfacet)
   })
   wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...) &
- theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(t = 10)))
+    theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(t = 10)))
 }
 
 #-----------------------------------------------------------------------------
