@@ -30,46 +30,46 @@ theme_tufte2 <- function (ticks = TRUE) {
 #' @importFrom ggplot2 geom_point ggplot_build scale_x_continuous scale_y_continuous theme element_line element_blank aes unit coord_cartesian
 #' @export
 #-----------------------------------------------------------------------------
-base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = "auto", y_lab_fun = "auto") {
+base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = function(x){x}, y_lab_fun = function(x){x}, n_wrap = 10) {
   if (scale_x) {
     b1 = pretty(x)
-    if (x_lab_fun == "auto") {
-      sx = scale_x_continuous(breaks=b1)
-    } else {
-      sx = scale_x_continuous(breaks=b1, labels=x_lab_fun)
-    }
+    # if (x_lab_fun == "auto") {
+    #   sx = scale_x_continuous(breaks=b1)
+    # } else {
+    sx = scale_x_continuous(breaks=b1, labels=x_lab_fun)
+    # }
   } else {
     b1 = as.factor(x) |> as.numeric()
-    if (x_lab_fun == "auto") {
-      sx = scale_x_discrete(labels = function(x) {
-        unlist(lapply(strwrap(x, width = 10, simplify = FALSE),
-          paste0,
-          collapse = "<br>"
-        ))
-      })
-    } else {
-      sx = scale_x_discrete(labels = x_lab_fun)
-    }
+    # if (x_lab_fun == "auto") {
+    sx = scale_x_discrete(labels = function(x) {
+      unlist(lapply(strwrap(x, width = n_wrap, simplify = FALSE),
+        paste0,
+        collapse = "<br>"
+      ))
+    })
+    # } else {
+    #   sx = scale_x_discrete(labels = x_lab_fun)
+    # }
   }
   if (scale_y) {
     b2 = pretty(y)
-    if (y_lab_fun == "auto") {
-      sy = scale_y_continuous(breaks=b2)
-    } else {
-      sy = scale_y_continuous(breaks=b2, labels=y_lab_fun)
-    }
+    # if (y_lab_fun == "auto") {
+    #   sy = scale_y_continuous(breaks=b2)
+    # } else {
+    sy = scale_y_continuous(breaks=b2, labels=y_lab_fun)
+    # }
   } else {
     b2 = as.factor(y) |> as.numeric()
-    if (y_lab_fun == "auto") {
-      sy = scale_y_continuous(labels = function(x) {
-        unlist(lapply(strwrap(x, width = 10, simplify = FALSE),
-          paste0,
-          collapse = "<br>"
-        ))
-      })
-    } else {
-      sy = scale_y_discrete(labels = y_lab_fun)
-    }
+    # if (y_lab_fun == "auto") {
+    sy = scale_y_continuous(labels = function(x) {
+      unlist(lapply(strwrap(x, width = n_wrap, simplify = FALSE),
+        paste0,
+        collapse = "<br>"
+      ))
+    })
+    # } else {
+    #   sy = scale_y_discrete(labels = y_lab_fun)
+    # }
   }
   d = data.frame(x=c(min(b1), max(b1)), y=c(min(b2), max(b2)))
   list(
@@ -97,7 +97,8 @@ base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = "auto", y_la
 #' @export
 #-----------------------------------------------------------------------------
 smart_lab = function(lab) {
-  str_replace(lab, "_", " ") |> str_to_title()
+  str = str_replace(lab, "_", " ")
+  gsub("\\b([a-z])", "\\U\\1", str, perl = TRUE)
 }
 #-----------------------------------------------------------------------------
 #' Mimic Base R break
@@ -114,7 +115,14 @@ smart_lab = function(lab) {
 #' @export
 #-----------------------------------------------------------------------------
 
-base_mode = function(p, i = 1, smart_label = T, x_lab_fun = "auto", y_lab_fun = "auto") {
+base_mode = function(
+  p,
+  i = 1,
+  smart_label = T,
+  x_lab_fun = function(x){x},
+  y_lab_fun = function(x){x},
+  n_wrap = 10
+) {
   # px = p + geom_point()
   px = p
   options(warn = -1)
@@ -124,17 +132,17 @@ base_mode = function(p, i = 1, smart_label = T, x_lab_fun = "auto", y_lab_fun = 
     as_tibble()
   if (class(p_tb$x)[1] != "mapped_discrete" & class(p_tb$y)[1] != "mapped_discrete") {
     print("Both numeric")
-    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), c(p_tb$y, p_tb$ymin, p_tb$ymax), x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
+    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), c(p_tb$y, p_tb$ymin, p_tb$ymax), x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap)
   } else if (class(p_tb$x)[1] != "mapped_discrete") {
     print("x numeric")
-    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), p_tb$y |> round(), scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
+    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), p_tb$y |> round(), scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.y = element_blank())
   } else if (class(p_tb$y)[1] != "mapped_discrete") {
     print("y numeric")
-    np = p + base_breaks(p_tb$x |> round(), c(p_tb$y, p_tb$ymin, p_tb$ymax), scale_x = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
+    np = p + base_breaks(p_tb$x |> round(), c(p_tb$y, p_tb$ymin, p_tb$ymax), scale_x = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.x = element_blank())
   } else {
     print("no numeric")
     # np = p + geom_rangeframe()
-    np = p + base_breaks(round(p_tb$x), round(p_tb$y), scale_x = F, scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun)
+    np = p + base_breaks(round(p_tb$x), round(p_tb$y), scale_x = F, scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank())
   }
   options(warn = 0)
   if (smart_label) {
@@ -170,8 +178,8 @@ base_facet = function(
   guides = "collect",
   nrow = "auto",
   ncol = "auto",
-  x_lab_fun = "auto",
-  y_lab_fun = "auto",
+  x_lab_fun = function(x){x},
+  y_lab_fun = function(x){x},
   after_dat = NA,
   after_fun = NA,
   ...
@@ -340,14 +348,14 @@ if (FALSE) {
   library(ggtext)
   oh_my_ggplot()
   annot_tb = data.frame(x = c(18,24), y = c(4.5,3.0), am = c(0,1), lab = c("Hi", "There"))
-  update_geom_defaults("point",list(fill = "coral", size=3, stroke=.6, shape=21))
+  update_geom_defaults("point",list(fill = "gray28", size=3, stroke=.6, shape=21))
   update_geom_defaults("smooth",list(color = "firebrick", fill = "firebrick", alpha = 0.05))
   p = mtcars |>
     # mutate(carb = as.factor(carb)) |>
-    ggplot(aes(mpg, wt)) +
-    geom_point() +
-    geom_text(data = annot_tb, aes(x, y, label = lab)) +
-    geom_smooth(se = T)
+    ggplot(aes(as.character(am), wt)) +
+    geom_point()
+    # geom_text(data = annot_tb, aes(x, y, label = lab))
+    # geom_smooth(se = T)
   p2 = base_mode(p) + ggplot2::coord_cartesian(clip = "off")
 
   ggsave("./test.pdf", p2, w = 10, h = 8)
@@ -371,14 +379,6 @@ if (FALSE) {
   ggplot_build(p)
     base_mode()
 
-ggplot(mtcars, aes(wt, mpg)) +
- geom_point() +
- geom_segment(x = -Inf, xend = -Inf, y= 0, yend = 14, color = "white", size = 2) +
- geom_point(x = 0, y= 0, color = "white", size = 2) +
- facet_wrap("am") +
- geom_rangeframe(color = c("red")) +
-#  coord_cartesian(clip="off") +
- theme_tufte()
   p |>
     base_facet(c("am", "vs"), guides = "auto", nrow = 2, scales = "fixed")
   
@@ -386,3 +386,4 @@ ggplot(mtcars, aes(wt, mpg)) +
 
   base_facet(p2,"am")
 }
+
