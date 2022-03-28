@@ -30,13 +30,25 @@ theme_tufte2 <- function (ticks = TRUE) {
 #' @importFrom ggplot2 geom_point ggplot_build scale_x_continuous scale_y_continuous theme element_line element_blank aes unit coord_cartesian
 #' @export
 #-----------------------------------------------------------------------------
-base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = function(x){x}, y_lab_fun = function(x){x}, n_wrap = 10) {
+base_breaks <- function(
+  x,
+  y,
+  scale_x = T,
+  scale_y = T,
+  x_lab_fun = function(x){x},
+  y_lab_fun = function(x){x},
+  n_wrap = 10,
+  expand_x_conti = c(0.05, 0),
+  expand_y_conti = c(0.05, 0),
+  expand_x_disc = c(0, 0.6),
+  expand_y_disc = c(0, 0.6)
+) {
   if (scale_x) {
     b1 = pretty(x)
     # if (x_lab_fun == "auto") {
     #   sx = scale_x_continuous(breaks=b1)
     # } else {
-    sx = scale_x_continuous(breaks=b1, labels=x_lab_fun)
+    sx = scale_x_continuous(breaks=b1, labels=x_lab_fun, expand = expand_x_conti)
     # }
   } else {
     b1 = as.factor(x) |> as.numeric()
@@ -46,7 +58,7 @@ base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = function(x){
         paste0,
         collapse = "<br>"
       ))
-    })
+    }, expand = expand_x_disc)
     # } else {
     #   sx = scale_x_discrete(labels = x_lab_fun)
     # }
@@ -56,7 +68,7 @@ base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = function(x){
     # if (y_lab_fun == "auto") {
     #   sy = scale_y_continuous(breaks=b2)
     # } else {
-    sy = scale_y_continuous(breaks=b2, labels=y_lab_fun)
+    sy = scale_y_continuous(breaks=b2, labels=y_lab_fun, expand = expand_y_conti)
     # }
   } else {
     b2 = as.factor(y) |> as.numeric()
@@ -66,7 +78,7 @@ base_breaks <- function(x, y, scale_x = T, scale_y = T, x_lab_fun = function(x){
         paste0,
         collapse = "<br>"
       ))
-    })
+    }, expand = expand_y_disc)
     # } else {
     #   sy = scale_y_discrete(labels = y_lab_fun)
     # }
@@ -122,7 +134,8 @@ base_mode = function(
   x_lab_fun = function(x){x},
   y_lab_fun = function(x){x},
   n_wrap = 10,
-  flip = F
+  flip = F,
+  ...
 ) {
   # px = p + geom_point()
   px = p
@@ -133,26 +146,80 @@ base_mode = function(
     as_tibble()
   if (class(p_tb$x)[1] != "mapped_discrete" & class(p_tb$y)[1] != "mapped_discrete") {
     print("Both numeric")
-    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), c(p_tb$y, p_tb$ymin, p_tb$ymax), x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap)
+    np = p + base_breaks(
+      c(p_tb$x, p_tb$xmin, p_tb$xmax),
+      c(p_tb$y, p_tb$ymin, p_tb$ymax),
+      x_lab_fun = x_lab_fun,
+      y_lab_fun = y_lab_fun,
+      n_wrap = n_wrap,
+      ...
+    )
     if (flip) {
       np = np + coord_flip(clip = "off")
     }
   } else if (class(p_tb$x)[1] != "mapped_discrete") {
     print("x numeric")
-    np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), p_tb$y |> round(), scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.y = element_blank())
+    np = p + base_breaks(
+      c(p_tb$x, p_tb$xmin, p_tb$xmax),
+      p_tb$y |> round(),
+      scale_y = F,
+      x_lab_fun = x_lab_fun,
+      y_lab_fun = y_lab_fun,
+      n_wrap = n_wrap,
+      expand_x_conti = c(0.01, 0),
+      ...
+    ) + theme(axis.ticks.y = element_blank())
     if (flip) {
-      np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), p_tb$y |> round(), scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.x = element_blank()) + coord_flip(clip = "off")
+      np = p + base_breaks(
+        c(p_tb$x, p_tb$xmin, p_tb$xmax),
+        p_tb$y |> round(),
+        scale_y = F,
+        x_lab_fun = x_lab_fun,
+        y_lab_fun = y_lab_fun,
+        n_wrap = n_wrap,
+        expand_x_conti = c(0.01, 0),
+        ...
+      ) + theme(axis.ticks.x = element_blank()) + coord_flip(clip = "off")
     }
   } else if (class(p_tb$y)[1] != "mapped_discrete") {
     print("y numeric")
-    np = p + base_breaks(p_tb$x |> round(), c(p_tb$y, p_tb$ymin, p_tb$ymax), scale_x = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.x = element_blank())
+    np = p + base_breaks(
+      p_tb$x |> round(),
+      c(p_tb$y, p_tb$ymin, p_tb$ymax),
+      scale_x = F,
+      x_lab_fun = x_lab_fun,
+      y_lab_fun = y_lab_fun,
+      n_wrap = n_wrap,
+      expand_y_conti = c(0.01, 0),
+      ...
+    ) + theme(axis.ticks.x = element_blank()) + geom_hline(size = 2, yintercept = -Inf, color = "white")
     if (flip) {
-      np = p + base_breaks(p_tb$x |> round(), c(p_tb$y, p_tb$ymin, p_tb$ymax), scale_x = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.y = element_blank()) + coord_flip(clip = "off")
+      np = p + base_breaks(
+        p_tb$x |> round(),
+        c(p_tb$y, p_tb$ymin, p_tb$ymax),
+        scale_x = F,
+        x_lab_fun = x_lab_fun,
+        y_lab_fun = y_lab_fun,
+        n_wrap = n_wrap,
+        expand_y_conti = c(0.01, 0),
+        ...
+      ) + theme(axis.ticks.y = element_blank()) + coord_flip(clip = "off") + geom_hline(size = 2, yintercept = -Inf, color = "white")
     }
   } else {
     print("no numeric")
     # np = p + geom_rangeframe()
-    np = p + base_breaks(round(p_tb$x), round(p_tb$y), scale_x = F, scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank())
+    np = p + base_breaks(
+      round(p_tb$x),
+      round(p_tb$y),
+      scale_x = F,
+      scale_y = F,
+      x_lab_fun = x_lab_fun,
+      y_lab_fun = y_lab_fun,
+      n_wrap = n_wrap,
+      expand_x_conti = c(0.01, 0),
+      expand_y_conti = c(0.01, 0),
+      ...
+    ) + theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank())
     if (flip) {
       np = np + coord_flip(clip = "off")
     }
@@ -370,7 +437,7 @@ if (FALSE) {
     geom_point()
     # geom_text(data = annot_tb, aes(x, y, label = lab))
     # geom_smooth(se = T)
-  p2 = base_mode(p) + ggplot2::coord_cartesian(clip = "off")
+  p2 = base_mode(p, flip = F)
 
   ggsave("./test.pdf", p2, w = 10, h = 8)
 
