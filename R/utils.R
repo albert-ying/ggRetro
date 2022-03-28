@@ -121,7 +121,8 @@ base_mode = function(
   smart_label = T,
   x_lab_fun = function(x){x},
   y_lab_fun = function(x){x},
-  n_wrap = 10
+  n_wrap = 10,
+  flip = F
 ) {
   # px = p + geom_point()
   px = p
@@ -133,16 +134,28 @@ base_mode = function(
   if (class(p_tb$x)[1] != "mapped_discrete" & class(p_tb$y)[1] != "mapped_discrete") {
     print("Both numeric")
     np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), c(p_tb$y, p_tb$ymin, p_tb$ymax), x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap)
+    if (flip) {
+      np = np + coord_flip(clip = "off")
+    }
   } else if (class(p_tb$x)[1] != "mapped_discrete") {
     print("x numeric")
     np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), p_tb$y |> round(), scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.y = element_blank())
+    if (flip) {
+      np = p + base_breaks(c(p_tb$x, p_tb$xmin, p_tb$xmax), p_tb$y |> round(), scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.x = element_blank()) + coord_flip(clip = "off")
+    }
   } else if (class(p_tb$y)[1] != "mapped_discrete") {
     print("y numeric")
     np = p + base_breaks(p_tb$x |> round(), c(p_tb$y, p_tb$ymin, p_tb$ymax), scale_x = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.x = element_blank())
+    if (flip) {
+      np = p + base_breaks(p_tb$x |> round(), c(p_tb$y, p_tb$ymin, p_tb$ymax), scale_x = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.y = element_blank()) + coord_flip(clip = "off")
+    }
   } else {
     print("no numeric")
     # np = p + geom_rangeframe()
     np = p + base_breaks(round(p_tb$x), round(p_tb$y), scale_x = F, scale_y = F, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap) + theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank())
+    if (flip) {
+      np = np + coord_flip(clip = "off")
+    }
   }
   options(warn = 0)
   if (smart_label) {
@@ -182,6 +195,7 @@ base_facet = function(
   y_lab_fun = function(x){x},
   after_dat = NA,
   after_fun = NA,
+  flip = F,
   ...
 ) {
   px = p 
@@ -289,7 +303,7 @@ base_facet = function(
         geom_blank(aes(x = x_min, y = y_min)) +
         geom_blank(aes(x = x_max, y = y_max))
     }
-    pfacet = base_mode(pfacet, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun) +
+    pfacet = base_mode(pfacet, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap, flip = flip) +
       labs(subtitle = facet.name)
     if (is.function(after_fun)) {
       if (is.list(after_dat)) {
