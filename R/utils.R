@@ -263,6 +263,7 @@ base_facet = function(
   after_dat = NA,
   after_fun = NA,
   flip = F,
+  nwrap = 10,
   ...
 ) {
   px = p 
