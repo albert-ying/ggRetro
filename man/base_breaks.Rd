@@ -9,8 +9,13 @@ base_breaks(
   y,
   scale_x = T,
   scale_y = T,
-  x_lab_fun = "auto",
-  y_lab_fun = "auto"
+  x_lab_fun = function(x) {     x },
+  y_lab_fun = function(x) {     x },
+  n_wrap = 10,
+  expand_x_conti = c(0.05, 0),
+  expand_y_conti = c(0.05, 0),
+  expand_x_disc = c(0, 0.6),
+  expand_y_disc = c(0, 0.6)
 )
 }
 \arguments{

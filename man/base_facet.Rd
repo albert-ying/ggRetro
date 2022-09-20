@@ -15,10 +15,12 @@ base_facet(
   guides = "collect",
   nrow = "auto",
   ncol = "auto",
-  x_lab_fun = "auto",
-  y_lab_fun = "auto",
+  x_lab_fun = function(x) {     x },
+  y_lab_fun = function(x) {     x },
   after_dat = NA,
   after_fun = NA,
+  flip = F,
+  n_wrap = 10,
   ...
 )
 }
