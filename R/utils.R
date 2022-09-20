@@ -8,15 +8,17 @@
 #' @importFrom ggplot2 geom_point ggplot_build scale_x_continuous scale_y_continuous theme element_line element_blank aes unit
 #' @export
 #-----------------------------------------------------------------------------
-theme_tufte2 <- function (ticks = TRUE) {
-    ret <- theme(legend.background = element_blank(), legend.key = element_blank(),               
-            panel.background = element_blank(), panel.border = element_blank(),                
-            strip.background = element_blank(), plot.background = element_blank(),             
-            axis.line = element_blank(), panel.grid = element_blank())                         
-    if (!ticks) {
-        ret <- ret + theme(axis.ticks = element_blank())                                       
-    }
-    ret
+theme_tufte2 <- function(ticks = TRUE) {
+  ret <- theme(
+    legend.background = element_blank(), legend.key = element_blank(),
+    panel.background = element_blank(), panel.border = element_blank(),
+    strip.background = element_blank(), plot.background = element_blank(),
+    axis.line = element_blank(), panel.grid = element_blank()
+  )
+  if (!ticks) {
+    ret <- ret + theme(axis.ticks = element_blank())
+  }
+  ret
 }
 #-----------------------------------------------------------------------------
 #' Mimic Base R break
@@ -25,35 +27,37 @@ theme_tufte2 <- function (ticks = TRUE) {
 #' @param y func_regex Regular expression to filter the list of ggplot functions to make pipe-enabled.  The default regex will capture all
 #' @param scale_x
 #' @param scale_y
-#' @importFrom ggthemes geom_rangeframe 
+#' @importFrom ggthemes geom_rangeframe
 #' @importFrom scales label_wrap
 #' @importFrom ggplot2 geom_point ggplot_build scale_x_continuous scale_y_continuous theme element_line element_blank aes unit coord_cartesian
 #' @export
 #-----------------------------------------------------------------------------
-base_breaks <- function(
-  x,
-  y,
-  scale_x = T,
-  scale_y = T,
-  x_lab_fun = function(x){x},
-  y_lab_fun = function(x){x},
-  n_wrap = 10,
-  expand_x_conti = c(0.05, 0),
-  expand_y_conti = c(0.05, 0),
-  expand_x_disc = c(0, 0.6),
-  expand_y_disc = c(0, 0.6)
-) {
+base_breaks <- function(x,
+                        y,
+                        scale_x = T,
+                        scale_y = T,
+                        x_lab_fun = function(x) {
+                          x
+                        },
+                        y_lab_fun = function(x) {
+                          x
+                        },
+                        n_wrap = 10,
+                        expand_x_conti = c(0.05, 0),
+                        expand_y_conti = c(0.05, 0),
+                        expand_x_disc = c(0, 0.6),
+                        expand_y_disc = c(0, 0.6)) {
   if (scale_x) {
-    b1 = pretty(x)
+    b1 <- pretty(x)
     # if (x_lab_fun == "auto") {
     #   sx = scale_x_continuous(breaks=b1)
     # } else {
-    sx = scale_x_continuous(breaks=b1, labels=x_lab_fun, expand = expand_x_conti)
+    sx <- scale_x_continuous(breaks = b1, labels = x_lab_fun, expand = expand_x_conti)
     # }
   } else {
-    b1 = as.factor(x) |> as.numeric()
+    b1 <- as.factor(x) |> as.numeric()
     # if (x_lab_fun == "auto") {
-    sx = scale_x_discrete(labels = function(x) {
+    sx <- scale_x_discrete(labels = function(x) {
       unlist(lapply(strwrap(x, width = n_wrap, simplify = FALSE),
         paste0,
         collapse = "<br>"
@@ -64,16 +68,16 @@ base_breaks <- function(
     # }
   }
   if (scale_y) {
-    b2 = pretty(y)
+    b2 <- pretty(y)
     # if (y_lab_fun == "auto") {
     #   sy = scale_y_continuous(breaks=b2)
     # } else {
-    sy = scale_y_continuous(breaks=b2, labels=y_lab_fun, expand = expand_y_conti)
+    sy <- scale_y_continuous(breaks = b2, labels = y_lab_fun, expand = expand_y_conti)
     # }
   } else {
-    b2 = as.factor(y) |> as.numeric()
+    b2 <- as.factor(y) |> as.numeric()
     # if (y_lab_fun == "auto") {
-    sy = scale_y_continuous(labels = function(x) {
+    sy <- scale_y_continuous(labels = function(x) {
       unlist(lapply(strwrap(x, width = n_wrap, simplify = FALSE),
         paste0,
         collapse = "<br>"
@@ -83,11 +87,11 @@ base_breaks <- function(
     #   sy = scale_y_discrete(labels = y_lab_fun)
     # }
   }
-  d = data.frame(x=c(min(b1), max(b1)), y=c(min(b2), max(b2)))
+  d <- data.frame(x = c(min(b1), max(b1)), y = c(min(b2), max(b2)))
   list(
     sx,
     sy,
-    geom_rangeframe(data = d, aes(x=x, y=y), size = 0.7, inherit.aes = FALSE),
+    geom_rangeframe(data = d, aes(x = x, y = y), size = 0.7, inherit.aes = FALSE),
     theme_tufte2(),
     theme(
       axis.ticks = element_line(size = 0.7, color = "black"),
@@ -384,7 +388,7 @@ base_facet = function(
     return(pfacet)
   })
   wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...) &
-    theme(plot.subtitle = element_markdown(hjust = 0.5, margin = margin(t = 10)))
+    theme(plot.subtitle = element_markdown(margin = margin(t = 10)))
 }
 
 #-----------------------------------------------------------------------------
@@ -413,6 +417,24 @@ add_pval = function(data) {
    }
   )
 }
+
+
+#-----------------------------------------------------------------------------
+#' Warp list of plot as facets
+#' @param p  plot
+#' @param facets a vector of column names used for facet
+#' @importFrom ggthemes geom_rangeframe theme_tufte
+#' @importFrom ggplot2 geom_point ggplot_build
+#' @importFrom tibble as_tibble
+#' @importFrom glue glue
+#' @importFrom stringr str_c
+#' @importFrom purrr map transpose
+#' @importFrom patchwork wrap_plots
+#' @importFrom dplyr group_by_at group_split group_keys
+#' @importFrom ggtext element_markdown
+#' @export
+#-----------------------------------------------------------------------------
+
 #-----------------------------------------------------------------------------
 # debug
 #-----------------------------------------------------------------------------
