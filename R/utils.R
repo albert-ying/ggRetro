@@ -237,6 +237,62 @@ base_mode = function(
 }
 
 #-----------------------------------------------------------------------------
+#' Warp list of plot as facets
+#' @param p  plot
+#' @param facets a vector of column names used for facet
+#' @importFrom ggthemes geom_rangeframe theme_tufte
+#' @importFrom ggplot2 geom_point ggplot_build
+#' @importFrom tibble as_tibble
+#' @importFrom glue glue
+#' @importFrom stringr str_c
+#' @importFrom purrr map transpose
+#' @importFrom patchwork wrap_plots
+#' @importFrom dplyr group_by_at group_split group_keys
+#' @importFrom ggtext element_markdown
+#' @export
+#-----------------------------------------------------------------------------
+
+base_wrap = function(plot.ls, nrow = "auto", ncol = "auto", labels = NULL, ...) {
+  # compute nrow ncol of patchwork plot, if not given
+  nplot = length(plot.ls)
+  message(glue("Number of plots: {nplot}"))
+  if (nrow == "auto" && ncol == "auto") {
+    nrow = floor(sqrt(nplot))
+    ncol = ceiling(nplot / nrow)
+  } else if (nrow == "auto") {
+    nrow = ceiling(nplot / ncol)
+  } else if (ncol == "auto") {
+    ncol = ceiling(nplot / nrow)
+  }
+  # Given N plot, nrow and ncol, which plots are at left edge
+  left_edge = seq(1, nplot, by = ncol)
+  bottom_edge = seq(nplot - ncol + 1, nplot, by = 1)
+  newplot.ls = map(seq_along(plot.ls), ~ {
+    pfacet = plot.ls[[.x]] +
+      theme(
+        plot.title.position = "panel",
+        plot.caption.position = "panel",
+        plot.subtitle = element_markdown(hjust = 0.5, margin = margin(t = 10)),
+      )
+    if (!.x %in% bottom_edge) {
+      pfacet = pfacet +
+        labs(x = "") +
+        theme(plot.margin = margin(b = 0))
+    }
+    if (!.x %in% left_edge) {
+      pfacet = pfacet +
+        labs(y = "") +
+        theme(plot.margin = margin(l = 0, r = 0))
+    }
+    if (!all(is_null(labels))) {
+      pfacet = pfacet +
+        labs(sub_title = labels[[.x]])
+    }
+    return(pfacet)
+  })
+  wrap_plots(newplot.ls, ncol = ncol, nrow = nrow, ...)
+}
+#-----------------------------------------------------------------------------
 #' Mimic Base R break
 #' @param p  plot
 #' @param facets a vector of column names used for facet
@@ -270,31 +326,18 @@ base_facet = function(
   n_wrap = 10,
   ...
 ) {
-  px = p 
+  px = p
   raw_data = px$data
   datakey = raw_data |>
     group_by_at(facets) |>
     group_keys()
-  # compute nrow ncol of patchwork plot, if not given
-  nplot = nrow(datakey)
-  if (nrow == "auto" & ncol == "auto") {
-    nrow = floor(sqrt(nplot))
-    ncol = ceiling(nplot / nrow)
-  } else if (nrow == "auto") {
-    nrow = ceiling(nplot / ncol)
-  } else if (ncol == "auto") {
-    ncol = ceiling(nplot / nrow)
-  }
-  # Given N plot, nrow and ncol, which plots are at left edge
-  left_edge = seq(1, nplot, by = ncol)
-  bottom_edge = seq(nplot-ncol+1, nplot, by = 1)
   # Get main data, split by group
   datals = raw_data |>
     group_by_at(facets) |>
     group_split()
   # Get data at other layers, split by group
   layer_datals = map(px$layers, ~{
-    if(is.data.frame(.x$data)) {
+    if (is.data.frame(.x$data)) {
       if (any(facets %in% colnames(.x$data))) {
         .x$data |>
           right_join(datakey) |>
@@ -337,7 +380,7 @@ base_facet = function(
   options(warn = 0)
 
   plot_list = map(1:length(datals), ~ {
-    psub = unserialize(serialize(px,NULL))
+    psub = unserialize(serialize(px, NULL))
     psub$data = datals[[.x]]
     # Change the data in each layers in place
     for (i in 1:length(psub$layers)) {
@@ -355,21 +398,12 @@ base_facet = function(
         name = glue(label_format_string)
       }
       if (c == 1) {
-        facet.name = name } else {
+        facet.name = name
+      } else {
         facet.name = str_c(facet.name, "<br><br>", name)
       }
     }
     pfacet = psub
-    if (!.x %in% bottom_edge) {
-      pfacet = pfacet +
-        labs(x = "") +
-        theme(plot.margin = margin(b = 0))
-    }
-    if (!.x %in% left_edge) {
-      pfacet = pfacet +
-        labs(y = "") +
-        theme(plot.margin = margin(l = 0, r = 0))
-    }
     if (scales == "fixed") {
       pfacet = pfacet +
         geom_blank(aes(x = x_min, y = y_min)) +
@@ -387,8 +421,8 @@ base_facet = function(
     }
     return(pfacet)
   })
-  wrap_plots(plot_list, guides = guides, ncol = ncol, nrow = nrow, ...) &
-    theme(plot.subtitle = element_markdown(margin = margin(t = 10)))
+
+  base_wrap(plot_list, guides = guides, ncol = ncol, nrow = nrow, labels = NULL, ...)
 }
 
 #-----------------------------------------------------------------------------
@@ -419,27 +453,12 @@ add_pval = function(data) {
 }
 
 
-#-----------------------------------------------------------------------------
-#' Warp list of plot as facets
-#' @param p  plot
-#' @param facets a vector of column names used for facet
-#' @importFrom ggthemes geom_rangeframe theme_tufte
-#' @importFrom ggplot2 geom_point ggplot_build
-#' @importFrom tibble as_tibble
-#' @importFrom glue glue
-#' @importFrom stringr str_c
-#' @importFrom purrr map transpose
-#' @importFrom patchwork wrap_plots
-#' @importFrom dplyr group_by_at group_split group_keys
-#' @importFrom ggtext element_markdown
-#' @export
-#-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------
 # debug
 #-----------------------------------------------------------------------------
 if (FALSE) {
-  library(ggRetro)
+  # library(ggRetro)
   library(ggplot2)
   library(dplyr)
   library(stringr)
@@ -455,8 +474,9 @@ if (FALSE) {
   update_geom_defaults("point",list(fill = "gray28", size=3, stroke=.6, shape=21))
   update_geom_defaults("smooth",list(color = "firebrick", fill = "firebrick", alpha = 0.05))
   p = mtcars |>
+    mutate(am = factor(am)) |>
     # mutate(carb = as.factor(carb)) |>
-    ggplot(aes(as.character(am), wt)) +
+    ggplot(aes(as.character(am), wt, fill = am)) +
     geom_point()
     # geom_text(data = annot_tb, aes(x, y, label = lab))
     # geom_smooth(se = T)
@@ -474,7 +494,7 @@ if (FALSE) {
   nrow = "auto"
   ncol = "auto"
 
-  p |> base_facet(c("am", "vs"), scales = "free")
+  p |> base_facet(c("gear"), scales = "free")
 
   face = p + facet_wrap(~am, scale = "fixed")
   bface = base_mode(face)
@@ -485,9 +505,13 @@ if (FALSE) {
 
   p |>
     base_facet(c("am", "vs"), guides = "auto", nrow = 2, scales = "fixed")
+
+  list(p,p) |> base_wrap()  
   
   facets = c("am", "vs")
 
   base_facet(p2,"am")
 }
+
+
 
