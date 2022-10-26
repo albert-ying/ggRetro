@@ -43,17 +43,18 @@ base_breaks <- function(x,
                           x
                         },
                         n_wrap = 10,
+                        outlier = 0.1,
                         expand_x_conti = c(0.05, 0),
                         expand_y_conti = c(0.05, 0),
                         expand_x_disc = c(0, 0.6),
                         expand_y_disc = c(0, 0.6)) {
   if (scale_x) {
+    rang = max(x)-min(x)
+    newmax = max(x)-rang*outlier
+    newmin = min(x)+rang*outlier
+    x = c(newmin, newmax)
     b1 <- pretty(x)
-    # if (x_lab_fun == "auto") {
-    #   sx = scale_x_continuous(breaks=b1)
-    # } else {
     sx <- scale_x_continuous(breaks = b1, labels = x_lab_fun, expand = expand_x_conti)
-    # }
   } else {
     b1 <- as.factor(x) |> as.numeric()
     # if (x_lab_fun == "auto") {
@@ -63,29 +64,22 @@ base_breaks <- function(x,
         collapse = "<br>"
       ))
     }, expand = expand_x_disc)
-    # } else {
-    #   sx = scale_x_discrete(labels = x_lab_fun)
-    # }
   }
   if (scale_y) {
+    rang = max(y)-min(y)
+    newmax = max(y)-rang*outlier
+    newmin = min(y)+rang*outlier
+    y = c(newmin, newmax)
     b2 <- pretty(y)
-    # if (y_lab_fun == "auto") {
-    #   sy = scale_y_continuous(breaks=b2)
-    # } else {
     sy <- scale_y_continuous(breaks = b2, labels = y_lab_fun, expand = expand_y_conti)
-    # }
   } else {
     b2 <- as.factor(y) |> as.numeric()
-    # if (y_lab_fun == "auto") {
     sy <- scale_y_continuous(labels = function(x) {
       unlist(lapply(strwrap(x, width = n_wrap, simplify = FALSE),
         paste0,
         collapse = "<br>"
       ))
     }, expand = expand_y_disc)
-    # } else {
-    #   sy = scale_y_discrete(labels = y_lab_fun)
-    # }
   }
   d <- data.frame(x = c(min(b1), max(b1)), y = c(min(b2), max(b2)))
   list(
@@ -480,7 +474,7 @@ if (FALSE) {
     geom_point()
     # geom_text(data = annot_tb, aes(x, y, label = lab))
     # geom_smooth(se = T)
-  p2 = base_mode(p, flip = F)
+  p2 = base_mode(p, flip = F, outlier = .2)
 
   ggsave("./test.pdf", p2, w = 10, h = 8)
 
