@@ -446,6 +446,73 @@ add_pval = function(data) {
   )
 }
 
+#--------------------------
+#' @export
+#---------------------------
+
+test_plot = function(dem_sum, group_var, value_var, fill_var) {
+  require(rstatix)
+  require(ggpubr)
+  require(gridExtra)
+  require(grid)
+  require(patchwork)
+  add_pval = function(data) {
+    tryCatch(
+      {
+        stat_pvalue_manual(
+          data,
+          label = "p.adj.signif",
+          inherit.aes = F,
+          hide.ns = T,
+          label.size = 8,
+          bracket.size = 0.6,
+          tip.length = 0.02,
+          step.increase = 0.05,
+          bracket.nudge.y = 1,
+          vjust = 0.65 
+        )
+      },
+      error = function(err) {
+     }
+    )
+  }
+  df = dem_sum[, c(group_var, value_var, fill_var)]
+  colnames(df) = c("x", "y", "c")
+  df = df |>
+    mutate(x = as.factor(as.character(x)))
+  res = df |>
+    anova_test(y ~ x) |>
+    as_tibble()
+  # Perform T test
+  res_t = df |>
+    pairwise_t_test(y ~ x) |>
+    adjust_pvalue(method = "holm") |>
+    add_significance() |>
+    add_y_position(scales = "free", step.increase = 0) |>
+    filter(p<0.05)
+  # Ploting
+  df = df |>
+    cbind(res) |>
+    mutate(anova = glue("ANOVA P = {p}")) |>
+    mutate(anova = ifelse(p < 0.05, glue("<b style='color:orange'>{anova}</b>"), anova)) 
+  p = {df |>
+    ggplot(aes(x = x, y = y, fill = c)) +
+    geom_violin(scale = "width", width = 0.5, alpha = 0.3, position=position_dodge(width = 0.6), trim = FALSE) +
+    labs(x = group_var, y = value_var, fill = fill_var, caption = unique(df$anova))
+    } |>
+    base_mode() +
+    geom_boxplot(width = 0.1, alpha = 0.5, position=position_dodge(width = 0.6)) +
+    geom_sina(alpha = 0.8, pch = 21, position=position_dodge(width = 0.6)) +
+    add_pval(res_t)
+
+  if (fill_var == group_var) {
+    p = p + theme(legend.position = "none")
+  }
+
+  return(p)
+}
+
+
 
 
 #-----------------------------------------------------------------------------
