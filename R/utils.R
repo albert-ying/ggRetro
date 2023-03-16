@@ -49,9 +49,9 @@ base_breaks <- function(x,
                         expand_x_disc = c(0, 0.6),
                         expand_y_disc = c(0, 0.6)) {
   if (scale_x) {
-    rang = max(x)-min(x)
-    newmax = max(x)-rang*outlier
-    newmin = min(x)+rang*outlier
+    rang = max(x, na.rm = T)-min(x, na.rm = T)
+    newmax = max(x, na.rm = T)-rang*outlier
+    newmin = min(x, na.rm = T)+rang*outlier
     x = c(newmin, newmax)
     b1 <- pretty(x)
     sx <- scale_x_continuous(breaks = b1, labels = x_lab_fun, expand = expand_x_conti)
@@ -66,9 +66,9 @@ base_breaks <- function(x,
     }, expand = expand_x_disc)
   }
   if (scale_y) {
-    rang = max(y)-min(y)
-    newmax = max(y)-rang*outlier
-    newmin = min(y)+rang*outlier
+    rang = max(y, na.rm = T)-min(y, na.rm = T)
+    newmax = max(y, na.rm = T)-rang*outlier
+    newmin = min(y, na.rm = T)+rang*outlier
     y = c(newmin, newmax)
     b2 <- pretty(y)
     sy <- scale_y_continuous(breaks = b2, labels = y_lab_fun, expand = expand_y_conti)
@@ -81,7 +81,7 @@ base_breaks <- function(x,
       ))
     }, expand = expand_y_disc)
   }
-  d <- data.frame(x = c(min(b1), max(b1)), y = c(min(b2), max(b2)))
+  d <- data.frame(x = c(min(b1, na.rm = T), max(b1, na.rm = T)), y = c(min(b2, na.rm = T), max(b2, na.rm = T)))
   list(
     sx,
     sy,
@@ -139,7 +139,7 @@ base_mode = function(
   px = p
   options(warn = -1)
   p_tb = ggplot_build(px)$data |>
-    map(~ {.x[,colnames(.x) %in% c("x", "y", "xmin", "xmax", "ymin", "ymax")]}) |>
+    map(~ {.x[,colnames(.x) %in% c("x", "y", "xmin", "xmax", "ymin", "ymax", "yintercept", "xintercept")]}) |>
     bind_rows() |>
     as_tibble()
   if (class(p_tb$x)[1] != "mapped_discrete" & class(p_tb$y)[1] != "mapped_discrete") {
@@ -367,10 +367,10 @@ base_facet = function(
       cbind(x = .x$x, y = .x$y, xmin = .x$xmin, xmax = .x$xmax, ymin = .x$ymin, ymax = .x$ymax) |>
         as_tibble()
     }) |> bind_rows()
-  x_max = max(c(cord_set$x, cord_set$xmax))
-  x_min = min(c(cord_set$x, cord_set$xmin))
-  y_max = max(c(cord_set$y, cord_set$ymax))
-  y_min = min(c(cord_set$y, cord_set$ymin))
+  x_max = max(c(cord_set$x, cord_set$xmax), na.rm = T)
+  x_min = min(c(cord_set$x, cord_set$xmin), na.rm = T)
+  y_max = max(c(cord_set$y, cord_set$ymax), na.rm = T)
+  y_min = min(c(cord_set$y, cord_set$ymin), na.rm = T)
   options(warn = 0)
 
   plot_list = map(1:length(datals), ~ {
@@ -538,11 +538,13 @@ if (FALSE) {
     mutate(am = factor(am)) |>
     # mutate(carb = as.factor(carb)) |>
     ggplot(aes(as.character(am), wt, fill = am)) +
-    geom_point()
-    # geom_text(data = annot_tb, aes(x, y, label = lab))
-    # geom_smooth(se = T)
-  p2 = base_mode(p, flip = F, outlier = .2)
+    geom_point() +
+    geom_hline(yintercept = 10.0, linetype = 2)
+  p = ggplot(mtcars, aes(wt)) +
+    geom_density()
 
+  p2 = base_mode(p, flip = F, outlier = 0.1)
+  p2
   ggsave("./test.pdf", p2, w = 10, h = 8)
 
   facets = c("am", "vs")
