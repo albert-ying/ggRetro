@@ -139,7 +139,7 @@ base_mode = function(
   px = p
   options(warn = -1)
   p_tb = ggplot_build(px)$data |>
-    map(~ {.x[,colnames(.x) %in% c("x", "y", "xmin", "xmax", "ymin", "ymax", "yintercept", "xintercept")]}) |>
+    map(~ {.x[,colnames(.x) %in% c("x", "y", "xmin", "xmax", "ymin", "ymax", "yintercept", "xintercept")] |> as_tibble()}) |>
     bind_rows() |>
     as_tibble()
   if (class(p_tb$x)[1] != "mapped_discrete" & class(p_tb$y)[1] != "mapped_discrete") {
