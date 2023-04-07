@@ -43,7 +43,7 @@ base_breaks <- function(x,
                           x
                         },
                         n_wrap = 10,
-                        outlier = 0.1,
+                        outlier = 0.05,
                         expand_x_conti = c(0.05, 0),
                         expand_y_conti = c(0.05, 0),
                         expand_x_disc = c(0, 0.6),
