@@ -34,8 +34,10 @@ theme_tufte2 <- function(ticks = TRUE) {
 #-----------------------------------------------------------------------------
 base_breaks <- function(x,
                         y,
+                        flip = FALSE,
                         scale_x = T,
                         scale_y = T,
+                        side_override = NA,
                         x_lab_fun = function(x) {
                           x
                         },
@@ -48,6 +50,7 @@ base_breaks <- function(x,
                         expand_y_conti = c(0.05, 0),
                         expand_x_disc = c(0, 0.6),
                         expand_y_disc = c(0, 0.6)) {
+  side = ""
   if (scale_x) {
     rang = max(x, na.rm = T)-min(x, na.rm = T)
     newmax = max(x, na.rm = T)-rang*outlier
@@ -55,6 +58,7 @@ base_breaks <- function(x,
     x = c(newmin, newmax)
     b1 <- pretty(x)
     sx <- scale_x_continuous(breaks = b1, labels = x_lab_fun, expand = expand_x_conti)
+    side <- ifelse(flip, paste0(side, "l", collapse = ""), paste0(side, "b", collapse = ""))
   } else {
     b1 <- as.factor(x) |> as.numeric()
     # if (x_lab_fun == "auto") {
@@ -72,20 +76,24 @@ base_breaks <- function(x,
     y = c(newmin, newmax)
     b2 <- pretty(y)
     sy <- scale_y_continuous(breaks = b2, labels = y_lab_fun, expand = expand_y_conti)
+    side <- ifelse(flip, paste0(side, "b", collapse = ""), paste0(side, "l", collapse = ""))
   } else {
     b2 <- as.factor(y) |> as.numeric()
-    sy <- scale_y_continuous(labels = function(x) {
+    sy <- scale_y_discrete(labels = function(x) {
       unlist(lapply(strwrap(x, width = n_wrap, simplify = FALSE),
         paste0,
         collapse = "<br>"
       ))
     }, expand = expand_y_disc)
   }
+  if (!is.na(side_override)) {
+    side = str_remove_all(side, side_override)
+  }
   d <- data.frame(x = c(min(b1, na.rm = T), max(b1, na.rm = T)), y = c(min(b2, na.rm = T), max(b2, na.rm = T)))
   list(
     sx,
     sy,
-    geom_rangeframe(data = d, aes(x = x, y = y), size = 0.7, inherit.aes = FALSE),
+    geom_rangeframe(data = d, aes(x = x, y = y), size = 0.7, inherit.aes = FALSE, sides = side),
     theme_tufte2(),
     theme(
       axis.ticks = element_line(size = 0.7, color = "black"),
@@ -133,6 +141,7 @@ base_mode = function(
   y_lab_fun = function(x){x},
   n_wrap = 10,
   flip = F,
+  side_override = NA,
   ...
 ) {
   # px = p + geom_point()
@@ -150,6 +159,8 @@ base_mode = function(
       x_lab_fun = x_lab_fun,
       y_lab_fun = y_lab_fun,
       n_wrap = n_wrap,
+      flip = flip,
+      side_override = side_override,
       ...
     )
     if (flip) {
@@ -165,6 +176,8 @@ base_mode = function(
       y_lab_fun = y_lab_fun,
       n_wrap = n_wrap,
       expand_x_conti = c(0.01, 0),
+      flip = flip,
+      side_override = side_override,
       ...
     ) + theme(axis.ticks.y = element_blank())
     if (flip) {
@@ -176,6 +189,8 @@ base_mode = function(
         y_lab_fun = y_lab_fun,
         n_wrap = n_wrap,
         expand_x_conti = c(0.01, 0),
+        flip = flip,
+        side_override = side_override,
         ...
       ) + theme(axis.ticks.x = element_blank()) + coord_flip(clip = "off")
     }
@@ -189,6 +204,8 @@ base_mode = function(
       y_lab_fun = y_lab_fun,
       n_wrap = n_wrap,
       expand_y_conti = c(0.01, 0),
+      flip = flip,
+      side_override = side_override,
       ...
     ) + theme(axis.ticks.x = element_blank()) + geom_hline(size = 2, yintercept = -Inf, color = "white")
     if (flip) {
@@ -200,6 +217,8 @@ base_mode = function(
         y_lab_fun = y_lab_fun,
         n_wrap = n_wrap,
         expand_y_conti = c(0.01, 0),
+        flip = flip,
+        side_override = side_override,
         ...
       ) + theme(axis.ticks.y = element_blank()) + coord_flip(clip = "off") + geom_hline(size = 2, yintercept = -Inf, color = "white")
     }
@@ -216,6 +235,8 @@ base_mode = function(
       n_wrap = n_wrap,
       expand_x_conti = c(0.01, 0),
       expand_y_conti = c(0.01, 0),
+      flip = flip,
+      side_override = side_override,
       ...
     ) + theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank())
     if (flip) {
@@ -318,6 +339,7 @@ base_facet = function(
   after_fun = NA,
   flip = F,
   n_wrap = 10,
+  labels = NULL,
   ...
 ) {
   px = p
@@ -373,6 +395,25 @@ base_facet = function(
   y_min = min(c(cord_set$y, cord_set$ymin), na.rm = T)
   options(warn = 0)
 
+  nplot = length(datals)
+  message(glue("Number of plots: {nplot}"))
+  if (nrow == "auto" && ncol == "auto") {
+    nrow = floor(sqrt(nplot))
+    ncol = ceiling(nplot / nrow)
+  } else if (nrow == "auto") {
+    nrow = ceiling(nplot / ncol)
+  } else if (ncol == "auto") {
+    ncol = ceiling(nplot / nrow)
+  }
+
+  # Given N plot, nrow and ncol, which plots are at left edge
+  left_edge = seq(1, nplot, by = ncol)
+  bottom_edge = seq(nplot - ncol + 1, nplot, by = 1)
+  both_edge = intersect(left_edge, bottom_edge)
+  side_vec = rep(NA, nplot)
+  # side_vec[left_edge] = "l"
+  # side_vec[bottom_edge] = "b"
+  # side_vec[both_edge] = "."
   plot_list = map(1:length(datals), ~ {
     psub = unserialize(serialize(px, NULL))
     psub$data = datals[[.x]]
@@ -403,8 +444,20 @@ base_facet = function(
         geom_blank(aes(x = x_min, y = y_min)) +
         geom_blank(aes(x = x_max, y = y_max))
     }
-    pfacet = base_mode(pfacet, x_lab_fun = x_lab_fun, y_lab_fun = y_lab_fun, n_wrap = n_wrap, flip = flip) +
-      labs(subtitle = facet.name)
+    pfacet = base_mode(
+      pfacet,
+      x_lab_fun = x_lab_fun,
+      y_lab_fun = y_lab_fun,
+      n_wrap = n_wrap,
+      flip = flip,
+      side_override = side_vec[.x]
+    ) +
+      labs(subtitle = facet.name) +
+      theme(
+        plot.title.position = "panel",
+        plot.caption.position = "panel",
+        plot.subtitle = element_markdown(hjust = 0.5, margin = margin(t = 10)),
+      )
     if (is.function(after_fun)) {
       if (is.list(after_dat)) {
         data = after_dat_ls[[.x]]
@@ -413,10 +466,25 @@ base_facet = function(
         pfacet = pfacet + after_fun()
       }
     }
+    if (!.x %in% bottom_edge) {
+      pfacet = pfacet +
+        labs(x = "") +
+        theme(plot.margin = margin(b = 0))
+    }
+    if (!.x %in% left_edge) {
+      pfacet = pfacet +
+        labs(y = "") +
+        theme(plot.margin = margin(l = 0, r = 0))
+    }
+    if (!all(is_null(labels))) {
+      pfacet = pfacet +
+        labs(sub_title = labels[[.x]])
+    }
     return(pfacet)
   })
 
-  base_wrap(plot_list, guides = guides, ncol = ncol, nrow = nrow, labels = NULL, ...)
+  wrap_plots(plot_list, ncol = ncol, nrow = nrow, ...)
+
 }
 
 #-----------------------------------------------------------------------------
@@ -566,15 +634,41 @@ if (FALSE) {
   ggplot_build(p)
     base_mode()
 
+  base_mode(p, side_override = '.')
   p |>
     base_facet(c("am", "vs"), guides = "auto", nrow = 2, scales = "fixed")
+  p |>
+    ggRetro::base_facet(c("am", "vs"), guides = "auto", nrow = 2, scales = "fixed")
 
   list(p,p) |> base_wrap()  
   
   facets = c("am", "vs")
 
   base_facet(p2,"am")
+  library(ggRetro)
+  library(ggridges)
+  library(ggplot2)
+  
+  p = mtcars |>
+  mutate(type = ifelse(vs == 0, "xxx", "bbb")) |>
+  ggplot(aes(x = mpg, y = type)) +
+  geom_density_ridges(alpha = 0.1) +
+  geom_vline(xintercept = 20, linetype = 2)
+
+str(p)
+p$layers[[1]] |> str()
+  q = ggplot_build(p) 
+  q$data |>length()
+  q$data[[1]]$alpha = 1
+  qq = ggplot_gtable(q) 
+
+  library("ggplotify")
+  qq = plot(q)
+  qq
+  ggsave(filename, plot=q)
+  base_mode(p2, flip = T)
 }
+
 
 
 
