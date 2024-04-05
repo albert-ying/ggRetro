@@ -483,7 +483,7 @@ base_facet = function(
     return(pfacet)
   })
 
-  wrap_plots(plot_list, ncol = ncol, nrow = nrow, guides = guides, ...)
+  wrap_plots(plot_list, ncol = ncol, nrow = nrow, ...) + plot_layout(guides = guides)
 
 }
 
